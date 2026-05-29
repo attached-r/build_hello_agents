@@ -1,0 +1,85 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+*.log
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+envs/
+.venv.*
+
+# --- Environment variables ---
+.env
+.env.local
+.env.*.local
+
+# --- Database ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vs/
+*.sublime-workspace
+*.sublime-project
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.desktop
+
+# --- Claude ---
+.claude/
+
+# --- Obsidian (personal vault) ---
+.obsidian/
+
+# --- Output / generated files ---
+output/
+**/output/
+*.output.txt
+*.output.md
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- Project-specific ---
+# 7-HelloAgents构建 output
+7-HelloAgents构建/output/
+
+# 6-框架开发实战 output
+6-框架开发实战/*_output.md
+6-框架开发实战/*_output.txt
+6-框架开发实战/autogen_output.md
+6-框架开发实战/CAMEL_output.md
+6-框架开发实战/LangGraph_output.txt
+
+# ex-1-Qdrant output
+ex-1-Qdrant/**/*_output.txt
+ex-1-Qdrant/**/*output.md
+ex-1-Qdrant/**/demo_output.txt
+ex-1-Qdrant/**/demo_output.md
+
+# Test / temp files
+test_imports.py
+*.test.py

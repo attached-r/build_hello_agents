@@ -1,0 +1,19 @@
+points=[ScoredPoint(id=200, version=10, score=0.7821311, payload={'category': 'laptop', 'price': 68, 'brand': 'HP'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=16, version=7, score=0.7778473, payload={'category': 'laptop', 'price': 887, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=704, version=20, score=0.77727115, payload={'category': 'laptop', 'price': 787, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=119, version=8, score=0.7743927, payload={'category': 'laptop', 'price': 283, 'brand': 'HP'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=750, version=20, score=0.77277416, payload={'category': 'laptop', 'price': 287, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=915, version=23, score=0.7712535, payload={'category': 'laptop', 'price': 417, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=802, version=21, score=0.77115667, payload={'category': 'laptop', 'price': 122, 'brand': 'HP'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=868, version=22, score=0.7697011, payload={'category': 'laptop', 'price': 303, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=564, version=17, score=0.7694508, payload={'category': 'laptop', 'price': 447, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None), ScoredPoint(id=178, version=9, score=0.76935077, payload={'category': 'laptop', 'price': 199, 'brand': 'Apple'}, vector=None, shard_key=None, order_value=None)]
+
+
+
+
+格式化的搜索结果：
+--------------------------------------------------------------------------------
+ 1. ID: 200, Score: 0.7821311, Brand: HP   , Category: laptop, Price: $68
+ 2. ID:  16, Score: 0.7778473, Brand: Apple, Category: laptop, Price: $887
+ 3. ID: 704, Score: 0.77727115, Brand: Apple, Category: laptop, Price: $787
+ 4. ID: 119, Score: 0.7743927, Brand: HP   , Category: laptop, Price: $283
+ 5. ID: 750, Score: 0.77277416, Brand: Apple, Category: laptop, Price: $287
+ 6. ID: 915, Score: 0.7712535, Brand: Apple, Category: laptop, Price: $417
+ 7. ID: 802, Score: 0.77115667, Brand: HP   , Category: laptop, Price: $122
+ 8. ID: 868, Score: 0.7697011, Brand: Apple, Category: laptop, Price: $303
+ 9. ID: 564, Score: 0.7694508, Brand: Apple, Category: laptop, Price: $447
+10. ID: 178, Score: 0.76935077, Brand: Apple, Category: laptop, Price: $199
+--------------------------------------------------------------------------------
+总共找到 10 个搜索结果

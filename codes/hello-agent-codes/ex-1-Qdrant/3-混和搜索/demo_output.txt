@@ -1,0 +1,82 @@
+Query: nutty aged cheese
+Dense Results:
+        - Mature Gouda cheese becomes grainy and develops a rich, buttery taste with extended aging. 0.5829767
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 0.4764711
+        - This French cheese has a flowing, buttery center encased in a bloomy white crust. 0.4505533
+Sparse Results:
+        - Aged Gouda develops a crystalline texture and nutty flavor profile after 18 months of maturation. 5.1563325
+        - Mature Gouda cheese becomes grainy and develops a rich, buttery taste with extended aging. 3.0210652
+        - Parmesan requires at least 12 months of cave aging to develop its signature sharp taste. 1.8819332
+
+Query: soft French cheese
+Dense Results:
+        - This French cheese has a flowing, buttery center encased in a bloomy white crust. 0.6242111
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 0.60305476
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.46846655
+Sparse Results:
+        - This French cheese has a flowing, buttery center encased in a bloomy white crust. 4.4368353
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 4.425153
+        - Grilled cheese sandwiches are the ultimate American comfort food for cold winter days. 1.1421313
+
+Query: pizza ingredients
+Dense Results:
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 0.5787226
+        - Fresh mozzarella pairs beautifully with ripe tomatoes and basil leaves. 0.37257057
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.33504552
+Sparse Results:
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 3.2916887
+
+Query: a good lunch
+Dense Results:
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.3385176
+        - Grilled cheese sandwiches are the ultimate American comfort food for cold winter days. 0.32261184
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 0.21690288
+Sparse Results:
+
+Query: nutty aged cheese
+RRF Results:
+        - Mature Gouda cheese becomes grainy and develops a rich, buttery taste with extended aging. 0.8333334
+        - Aged Gouda develops a crystalline texture and nutty flavor profile after 18 months of maturation. 0.5
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 0.33333334
+
+Query: soft French cheese
+RRF Results:
+        - This French cheese has a flowing, buttery center encased in a bloomy white crust. 1.0
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 0.6666667
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.25
+
+Query: pizza ingredients
+RRF Results:
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 1.0
+        - Fresh mozzarella pairs beautifully with ripe tomatoes and basil leaves. 0.33333334
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.25
+
+Query: a good lunch
+RRF Results:
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.5
+        - Grilled cheese sandwiches are the ultimate American comfort food for cold winter days. 0.33333334
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 0.25
+
+Query: nutty aged cheese
+DBSF Results:
+        - Mature Gouda cheese becomes grainy and develops a rich, buttery taste with extended aging. 1.1558483
+        - Aged Gouda develops a crystalline texture and nutty flavor profile after 18 months of maturation. 0.6808001
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 0.4362052
+
+Query: soft French cheese
+DBSF Results:
+        - This French cheese has a flowing, buttery center encased in a bloomy white crust. 1.2130749
+        - Brie cheese features a soft, creamy interior surrounded by an edible white rind. 1.1703095
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.30906463
+
+Query: pizza ingredients
+DBSF Results:
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 1.1904721
+        - Fresh mozzarella pairs beautifully with ripe tomatoes and basil leaves. 0.4285979
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.38092995
+
+Query: a good lunch
+DBSF Results:
+        - Croque Monsieur combines ham and Gruyère in France's answer to the toasted cheese sandwich. 0.6155778
+        - Grilled cheese sandwiches are the ultimate American comfort food for cold winter days. 0.5754742
+        - Classic Margherita pizza topped with tomato sauce, mozzarella, and fresh basil. 0.3089478

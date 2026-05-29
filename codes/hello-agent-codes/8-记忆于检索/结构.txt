@@ -1,0 +1,126 @@
+hello-agents/
+├── hello_agents/
+│   ├── memory/                   # 记忆系统模块
+│   │   ├── base.py               # 基础数据结构（MemoryItem, MemoryConfig, BaseMemory）
+│   │   ├── manager.py            # 记忆管理器（统一协调调度）
+│   │   ├── embedding.py          # 统一嵌入服务（DashScope/Local/TFIDF）
+│   │   ├── types/                # 记忆类型实现
+│   │   │   ├── working.py        # 工作记忆（TTL管理，纯内存）
+│   │   │   ├── episodic.py       # 情景记忆（事件序列，SQLite+Qdrant）
+│   │   │   ├── semantic.py       # 语义记忆（知识图谱，Qdrant+Neo4j）
+│   │   │   └── perceptual.py     # 感知记忆（多模态，SQLite+Qdrant）
+│   │   ├── storage/              # 存储后端实现
+│   │   │   ├── qdrant_store.py   # Qdrant向量存储（高性能向量检索）
+│   │   │   ├── neo4j_store.py    # Neo4j图存储（知识图谱管理）
+│   │   │   └── document_store.py # SQLite文档存储（结构化持久化）
+│   │   └── rag/                  # RAG系统
+│   │       ├── pipeline.py       # RAG管道（端到端处理）
+│   │       └── document.py       # 文档处理器（多格式解析）
+│   └── tools/builtin/            # 扩展内置工具
+│       ├── memory_tool.py        # 记忆工具（Agent记忆能力）
+│       └── rag_tool.py           # RAG工具（智能问答能力）
+└──
+
+
+本章将在第七章之上继续构建完善 记忆和检索功能
+
+
+## 三、四种记忆类型
+
+### 1. 工作记忆 (WorkingMemory)
+
+| 属性  | 说明                                  |
+| --- | ----------------------------------- |
+| 存储  | 纯内存 `list[MemoryItem]`              |
+| TTL | 配置 `working_ttl_minutes`，到期自动过期     |
+| 容量  | 配置 `working_capacity`，超限淘汰最早项（FIFO） |
+| 检索  | TF-IDF 语义相似度 × 0.7 + 时间衰减 × 0.3     |
+| 场景  | 当前对话上下文、短期临时信息                      |
+
+**运行机制**：
+- `add()` 每次操作前调用 `_expire()` 清理过期项
+- `search()` 先过期再打分排序
+- `forget_by_capacity()` 当记忆超过阈值时移除最早项
+
+### 2. 情景记忆 (EpisodicMemory)
+
+| 属性  | 说明                                   |
+| --- | ------------------------------------ |
+| 存储  | DocumentStore（SQLite / MySQL）        |
+| 检索  | 语义相似度 × 0.5 + 时间近因 × 0.3 + 重要性 × 0.2 |
+| 场景  | 历史事件记录、用户行为日志、长期经验                   |
+
+**检索评分公式**：
+```
+score = cosine_similarity × 0.5
+      + recency × 0.3           # 1 / (1 + age_days)
+      + importance × 0.2
+```
+
+**遗忘策略**：
+- `forget_by_age(max_age_days=30)`：删除超过指定天数的记忆
+- `forget_by_importance(threshold=0.2)`：删除重要性低于阈值的记忆
+
+### 3. 语义记忆 (SemanticMemory)
+
+| 属性  | 说明                                       |
+| --- | ---------------------------------------- |
+| 存储  | Qdrant 向量数据库 + Neo4j 图数据库 + 内存缓存兜底        |
+| 检索  | 混合策略：向量检索 × 0.7 + 图检索 × 0.3，乘以重要性权重     |
+| 场景  | 抽象概念关联、知识图谱推理、实体关系发现                     |
+
+**运行机制**：
+- `add()` 提取文本中的实体和关系（正则匹配 `X 是一种 Y` 等句式），分别存入 Neo4j 节点/边和 Qdrant 向量库
+- `search()` 并行执行向量检索和图检索，结果合并排序
+- 无 Neo4j/Qdrant 后端时自动降级到纯内存模式
+- 实体提取采用正则回退策略：先匹配定义句式，失败则提取所有中文双字词
+
+**检索评分公式**：
+```
+base_relevance = vector_score × 0.7 + graph_score × 0.3
+importance_weight = 0.8 + importance × 0.4
+score = base_relevance × importance_weight
+```
+
+**图搜索流程**：
+```
+用户查询 → 模糊匹配实体名称 (CONTAINS)
+        → 直接关联记忆 (similarity=0.9)
+        → 展开实体关系 (similarity=0.6)
+        → 合并去重返回
+```
+
+**依赖**：`pip install neo4j qdrant-client`
+
+### 4. 感知记忆 (PerceptualMemory)
+
+| 属性  | 说明                                       |
+| --- | ---------------------------------------- |
+| 存储  | 按模态分离的 Qdrant 集合（perceptual_text / image / audio） |
+| 检索  | 向量相似度 × 0.8 + 时间近因性 × 0.2，乘以重要性权重     |
+| 场景  | 图像描述、音频记录、跨模态检索                         |
+
+**运行机制**：
+- 按模态（text / image / audio）创建独立的 Qdrant 集合，避免维度不匹配
+- `add()` 根据 `item.metadata["modality"]` 路由到对应集合
+- `search()` 支持 `target_modality`（目标模态）和 `query_modality`（查询模态）参数，实现同模态和跨模态检索
+- 时间近因性采用指数衰减模型模拟遗忘曲线
+- 无 Qdrant 后端时自动降级到内存关键词匹配
+
+**检索评分公式**：
+```
+base_relevance = vector_score × 0.8 + recency_score × 0.2
+importance_weight = 0.8 + importance × 0.4
+score = base_relevance × importance_weight
+```
+
+**时间衰减模型**：
+```
+recency_score = exp(-0.1 × age_hours / 24)
+```
+- 24 小时内保持高分，之后逐渐衰减
+- 最低保持 0.1 的基础分数
+
+**简化编码策略**（当前实现）：
+- 全部模态走文本嵌入（`BaseEmbedding.embed()`）
+- 未来可接入 CLIP（图像）和 CLAP（音频）专用编码器
