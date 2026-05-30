@@ -49,7 +49,7 @@ class DocumentStore:
 
     def __init__(
         self,
-        db_path: str = "memory.db",
+        db_path: str = "memory.db",              #? 数据库文件路径（默认 memory.db）
         db_type: Optional[str] = None,
         host: Optional[str] = None,
         port: Optional[int] = None,
@@ -137,7 +137,7 @@ class DocumentStore:
             f"  session_id VARCHAR(128) DEFAULT '',"
             f"  importance FLOAT DEFAULT 0.5,"
             f"  timestamp VARCHAR(32) NOT NULL,"
-            f"  metadata TEXT DEFAULT '{{}}'"
+            f"  metadata TEXT"
             f")"
         )
 
@@ -146,14 +146,15 @@ class DocumentStore:
         try:
             with conn.cursor() as cur:
                 cur.execute(self._table_sql())
-                cur.execute(
-                    f"CREATE INDEX IF NOT EXISTS idx_{self._table}_type "
-                    f"ON `{self._table}`(memory_type)"
-                )
-                cur.execute(
-                    f"CREATE INDEX IF NOT EXISTS idx_{self._table}_session "
-                    f"ON `{self._table}`(session_id)"
-                )
+                # MySQL 不支持 CREATE INDEX IF NOT EXISTS，用 try-except 容错
+                for col in ("memory_type", "session_id"):
+                    try:
+                        cur.execute(
+                            f"CREATE INDEX idx_{self._table}_{col} "
+                            f"ON `{self._table}`({col})"
+                        )
+                    except Exception:
+                        pass  # 索引已存在，忽略
             conn.commit()
         finally:
             conn.close()

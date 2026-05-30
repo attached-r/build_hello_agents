@@ -36,15 +36,15 @@ class MemoryConfig(BaseModel):
     working_capacity: int = 50
 
     # 情景记忆
-    episodic_db_path: str = "memory.db"
-    episodic_db_type: str = "sqlite"     # sqlite / mysql
+    episodic_db_path: str = "memory.db" # 数据库文件路径
+    episodic_db_type: str = "mysql"     # sqlite / mysql
 
     # 预留类型开关
     semantic_enabled: bool = False
     perceptual_enabled: bool = False
 
     # 嵌入
-    embedding_model: str = "tfidf"
+    embedding_model: str = "fastembed"    # tfidf / fastembed
     embedding_dim: int = 384
 
     # 整合与遗忘

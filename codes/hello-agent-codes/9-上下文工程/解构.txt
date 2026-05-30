@@ -1,0 +1,10 @@
+hello-agents/
+├── hello_agents/
+|   |—— context/
+|   |    |——builder.py            # 上下文构建起 实现CSSC流水线，提供统一上下文管理接口         
+│   └── tools/builtin/            # 扩展内置工具
+│       ├── note_tool.py          # 结构化笔记工具，支持智能体进行持久化记忆管理（Agent记忆能力）
+│       └── terminal_tool.py      # 终端工具，支持智能体进行文件系统操作和即时上下文检索
+└──
+
+本章是在第七章新增的上下文工程

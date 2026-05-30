@@ -31,7 +31,7 @@ class RAGQueryResult:
     answer: str = ""
     expanded_queries: list[str] = field(default_factory=list)
 
-    @property
+    @property  #? 上下文属性
     def context(self) -> str:
         """格式化后的上下文字符串"""
         lines = [f"用户问题: {self.query}\n"]
@@ -60,7 +60,7 @@ class RAGPipeline:
 
     Args:
         llm: LLM 实例，需要实现 think(messages) -> str
-        embedding: 嵌入模型（默认 TF-IDF）
+        embedding: 嵌入模型（默认 FastEmbed）
         collection_name: Qdrant 集合名（默认 knowledge_base）
         top_k: 默认返回数
         score_threshold: 最低相似度阈值
@@ -78,7 +78,7 @@ class RAGPipeline:
         qdrant_api_key: Optional[str] = None,
     ):
         self.llm = llm
-        self.embedding = embedding or create_embedding("tfidf")
+        self.embedding = embedding or create_embedding("fastembed")
         self.top_k = top_k
         self.score_threshold = score_threshold
         self.doc_processor = DocumentProcessor()
