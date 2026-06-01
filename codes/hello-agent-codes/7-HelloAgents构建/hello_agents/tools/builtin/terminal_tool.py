@@ -40,9 +40,9 @@
 """
 
 import os
-import shlex
-import subprocess
-from pathlib import Path
+import shlex                       # 用于解析命令字符串
+import subprocess                  # 用于执行命令
+from pathlib import Path             # 用于处理路径
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ...tools.base import Tool, ToolParameter
@@ -57,6 +57,9 @@ from ...tools.base import Tool, ToolParameter
 READONLY_COMMANDS: Set[str] = {
     # ── 文件查看 ──
     "cat", "head", "tail", "less", "more", "nl",
+    # ── Windows 兼容 ──
+    "type",                     # Windows: cat 等效
+    # ── 目录与属性查看 ──
     # ── 文件搜索与定位 ──
     "find", "grep", "rg", "ag", "ack", "locate",
     # ── 目录与属性查看 ──
@@ -476,6 +479,11 @@ class TerminalTool(Tool):
             if part.startswith("-"):
                 continue
 
+            # 跳过 Windows 风格的开关（如 tree /F, dir /s）
+            # 注意: /etc/passwd 含多个 / 不会被跳过，会进入沙箱检查
+            if part.startswith("/") and "/" not in part[1:]:
+                continue
+
             # 跳过纯命令名（如 cat, grep, ls）
             if part == parts[0]:
                 continue
@@ -503,6 +511,7 @@ class TerminalTool(Tool):
 
         在 workspace 目录中执行，捕获 stdout 和 stderr。
         支持超时控制。
+        编码自适应: Windows 用系统编码（如 GBK），Unix 用 UTF-8。
 
         Args:
             command: 命令字符串
@@ -511,6 +520,11 @@ class TerminalTool(Tool):
         Returns:
             (stdout, stderr, returncode)
         """
+        import locale
+
+        # 系统首选编码: Windows 中文 = GBK, Linux/Mac = UTF-8
+        system_encoding = locale.getpreferredencoding() or "utf-8"
+
         try:
             result = subprocess.run(
                 command,
@@ -519,7 +533,7 @@ class TerminalTool(Tool):
                 cwd=str(self.current_dir),      # 工作目录（跟随 cd 导航）
                 timeout=timeout,                # 超时控制
                 text=True,                      # 以文本模式返回（而非 bytes）
-                encoding="utf-8",               # 指定 UTF-8 编码
+                encoding=system_encoding,       # 用系统编码（兼容 Windows GBK）
                 errors="replace",               # 无法解码的字符用 � 替换
             )
             return (
@@ -530,7 +544,7 @@ class TerminalTool(Tool):
 
         except subprocess.TimeoutExpired as e:
             return (
-                e.stdout.decode("utf-8", errors="replace") if e.stdout else "",
+                e.stdout.decode(system_encoding, errors="replace") if e.stdout else "",
                 f"⏱️ 命令超时（{timeout} 秒）",
                 -1,
             )

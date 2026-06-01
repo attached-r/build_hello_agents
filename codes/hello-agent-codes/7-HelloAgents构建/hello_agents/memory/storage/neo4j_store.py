@@ -25,7 +25,7 @@ class Neo4jGraphStore:
         uri: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
-        database: str = "neo4j",
+        database: Optional[str] = None,
         **kwargs,
     ):
         if not NEO4J_AVAILABLE:
@@ -34,8 +34,9 @@ class Neo4jGraphStore:
         self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
         self._password = password or os.getenv("NEO4J_PASSWORD", "neo4j")
-        self._database = database
+        self._database = database or os.getenv("NEO4J_DATABASE") or None
         self._driver = GraphDatabase.driver(self._uri, auth=(self._user, self._password))
+        self._driver.verify_connectivity()
 
     def close(self):
         """关闭连接"""
@@ -64,11 +65,12 @@ class Neo4jGraphStore:
         properties: Optional[dict] = None,
     ) -> bool:
         """创建实体节点（MERGE 避免重复）"""
-        props = properties or {}
+        props = properties or None  # None → 不设置 e.properties
         result = self._run(
             "MERGE (e:Entity {entity_id: $entity_id}) "
             "SET e.name = $name, e.type = $entity_type, e.memory_id = $memory_id, "
-            "    e.properties = $props, e.created_at = timestamp() "
+            "    e.created_at = timestamp() "
+            "SET e.properties = $props "
             "RETURN e",
             {
                 "entity_id": entity_id,
@@ -118,22 +120,38 @@ class Neo4jGraphStore:
         properties: Optional[dict] = None,
     ) -> bool:
         """创建实体间关系"""
-        props = properties or {}
-        result = self._run(
-            "MATCH (s:Entity {entity_id: $subject_id}) "
-            "MATCH (o:Entity {entity_id: $object_id}) "
-            "MERGE (s)-[r:RELATION {type: $relation_type}]->(o) "
-            "SET r.memory_id = $memory_id, r.properties = $props, "
-            "    r.created_at = timestamp() "
-            "RETURN r",
-            {
-                "subject_id": subject_id,
-                "object_id": object_id,
-                "relation_type": relation_type,
-                "memory_id": memory_id,
-                "props": props,
-            },
-        )
+        props = properties or None
+        if props is not None:
+            result = self._run(
+                "MATCH (s:Entity {entity_id: $subject_id}) "
+                "MATCH (o:Entity {entity_id: $object_id}) "
+                "MERGE (s)-[r:RELATION {type: $relation_type}]->(o) "
+                "SET r.memory_id = $memory_id, r.properties = $props, "
+                "    r.created_at = timestamp() "
+                "RETURN r",
+                {
+                    "subject_id": subject_id,
+                    "object_id": object_id,
+                    "relation_type": relation_type,
+                    "memory_id": memory_id,
+                    "props": props,
+                },
+            )
+        else:
+            result = self._run(
+                "MATCH (s:Entity {entity_id: $subject_id}) "
+                "MATCH (o:Entity {entity_id: $object_id}) "
+                "MERGE (s)-[r:RELATION {type: $relation_type}]->(o) "
+                "SET r.memory_id = $memory_id, "
+                "    r.created_at = timestamp() "
+                "RETURN r",
+                {
+                    "subject_id": subject_id,
+                    "object_id": object_id,
+                    "relation_type": relation_type,
+                    "memory_id": memory_id,
+                },
+            )
         return len(result) > 0
 
     def get_relations(
