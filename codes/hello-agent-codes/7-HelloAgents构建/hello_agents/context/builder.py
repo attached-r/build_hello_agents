@@ -808,6 +808,61 @@ class ContextBuilder:
                 pass
         return datetime.now()
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # TerminalTool 集成
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    @staticmethod
+    def make_terminal_packet(
+        terminal_output: str,
+        command: str,
+        relevance_score: float = 0.9,
+    ) -> "ContextPacket":
+        """将 TerminalTool 的输出包装为 ContextPacket，供 custom_packets 使用。
+
+        这是 JIT（Just-in-Time）上下文模式的关键集成点：
+        Agent 通过 TerminalTool 即时探索文件系统后，将结果包装为
+        ContextPacket 传入 GSSC 流水线，让 LLM 在当前轮次看到
+        终端输出，而无需预先把整个代码库索引进 RAG。
+
+        价值分流（输出不应长期留在对话历史中）:
+          1. TerminalTool 即时发现 → 当前轮需要的片段 → ContextBuilder
+          2. 重要结论 → NoteTool
+          3. 用户偏好或稳定知识 → MemoryTool
+
+        用法:
+            # 在 Agent 代码中
+            terminal_output = terminal_tool.run({"command": "ls -la"})
+            packet = ContextBuilder.make_terminal_packet(
+                terminal_output=terminal_output,
+                command="ls -la",
+            )
+            context = builder.build(
+                user_query="项目结构是什么样的？",
+                custom_packets=[packet],
+            )
+
+        Args:
+            terminal_output: TerminalTool.run() 返回的格式化输出
+            command:         执行的命令（存入 metadata 供溯源）
+            relevance_score: 相关性分数，默认 0.9（终端探索通常与当前任务
+                             高度相关）
+
+        Returns:
+            ContextPacket 实例，可直接传入 custom_packets
+        """
+        return ContextPacket(
+            content=terminal_output,
+            timestamp=datetime.now(),
+            token_count=len(terminal_output) // 4,
+            relevance_score=relevance_score,
+            metadata={
+                "type": "terminal",
+                "command": command,
+                "source": "TerminalTool",
+            },
+        )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 辅助函数
