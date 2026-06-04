@@ -207,12 +207,7 @@ mcp_tool.run({"action": "list_tools"})
 | `test_discover_tools()` | 查看工具参数 Schema |
 | `test_connection_errors()` | 错误处理测试 |
 
-运行方式：
 
-```bash
-cd 7-HelloAgents构建
-python test/testMCP/mcpClient.py
-```
 
 ## 架构示意
 
