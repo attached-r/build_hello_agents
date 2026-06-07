@@ -459,6 +459,192 @@ class MCPTool(Tool):
 
 
 # ══════════════════════════════════════════════════════════════════════
+# A2ATool — 调用远程 A2A Agent 的工具
+# ══════════════════════════════════════════════════════════════════════
+
+class A2ATool(Tool):
+    """A2A 通信工具 — Agent 通过它与远程 A2A Agent 交互。
+
+    将异步的 A2A 客户端封装为同步 Tool，支持发送消息、
+    查询 Agent Card 和列出技能等操作。
+
+    用法:
+        tool = A2ATool(default_url="http://localhost:9998")
+        tool.run({"action": "send_message", "message": "你好"})
+        tool.run({"action": "get_agent_card"})
+
+    与智能体集成:
+        from hello_agents import ReActAgent
+        from hello_agents.tools import A2ATool
+
+        agent = ReActAgent(name="助手", llm=llm)
+        agent.add_tool(A2ATool(default_url="http://localhost:9999"))
+    """
+
+    def __init__(self, default_url: Optional[str] = None, name: str = "a2a"):
+        """初始化 A2ATool。
+
+        Args:
+            default_url: 远程 A2A Agent 的默认 URL（可选，调用时可覆盖）
+            name: 工具名称（默认 "a2a"）
+        """
+        super().__init__(
+            name=name,
+            description=(
+                "A2A (Agent-to-Agent) 通信工具，与远程 AI Agent 交互。\n\n"
+                "支持的操作:\n"
+                "  · send_message   — 向远程 Agent 发送消息并获取回复\n"
+                "  · get_agent_card — 获取远程 Agent 的元信息卡片\n"
+                "  · list_skills    — 列出远程 Agent 支持的能力"
+            ),
+        )
+        self._default_url = default_url
+
+        # 异步事件循环（专用线程）
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop_thread: Optional[threading.Thread] = None
+
+    # ── Async-Sync 桥接 ──────────────────────────────────────────
+
+    def _ensure_loop(self) -> asyncio.AbstractEventLoop:
+        """确保存在一个独立运行的专用事件循环。
+
+        使用 daemon 线程 + 独立事件循环，兼容 Jupyter / FastAPI
+        等已有事件循环的运行环境。
+        """
+        if self._loop and self._loop.is_running():
+            return self._loop
+
+        self._loop = asyncio.new_event_loop()
+        self._loop_thread = threading.Thread(
+            target=lambda: (asyncio.set_event_loop(self._loop), self._loop.run_forever()),
+            daemon=True,
+            name="a2a-tool-event-loop",
+        )
+        self._loop_thread.start()
+        return self._loop
+
+    def _run_async(self, coro: Any, timeout: float = 60) -> Any:
+        """在专用事件循环中执行异步协程，同步等待结果。
+
+        Args:
+            coro: 要执行的协程
+            timeout: 超时秒数（默认 60）
+
+        Returns:
+            协程的执行结果
+        """
+        loop = self._ensure_loop()
+        return asyncio.run_coroutine_threadsafe(coro, loop).result(timeout=timeout)
+
+    # ── 工具接口 ────────────────────────────────────────────────
+
+    def run(self, parameters: Dict[str, Any]) -> str:
+        """统一入口 — 根据 action 分发到具体操作。
+
+        Args:
+            parameters: 参数字典
+                - action: 操作类型（send_message / get_agent_card / list_skills）
+                - url: 目标 Agent URL（可选，覆盖默认 URL）
+                - message: 消息内容（send_message 需要）
+
+        Returns:
+            操作结果的格式化字符串
+        """
+        action = parameters.get("action", "")
+        if not action:
+            return "❌ 参数 'action' 不能为空。支持的操作: send_message / get_agent_card / list_skills"
+
+        handler = getattr(self, f"_{action}", None)
+        if handler is None:
+            return f"❌ 未知操作 '{action}'，支持: send_message / get_agent_card / list_skills"
+
+        try:
+            return handler(**parameters)
+        except ImportError as e:
+            return f"❌ 缺少依赖: {e}，请安装: pip install a2a-sdk httpx"
+        except Exception as e:
+            return f"❌ {action} 失败: {e}"
+
+    def get_parameters(self) -> List[ToolParameter]:
+        return [
+            ToolParameter(name="action", type="string", description="操作: send_message / get_agent_card / list_skills"),
+            ToolParameter(name="url", type="string", description="目标 Agent URL（可选，使用默认 URL）", required=False),
+            ToolParameter(name="message", type="string", description="消息内容（send_message 需要）", required=False),
+        ]
+
+    # ── 辅助方法 ────────────────────────────────────────────────
+
+    def _get_url(self, params: Dict[str, Any]) -> str:
+        url = params.get("url", self._default_url)
+        if not url:
+            raise ValueError("需要 url 参数，请在构造时传入 default_url 或调用时传入 url")
+        return url
+
+    # ── 操作实现 ────────────────────────────────────────────────
+
+    def _send_message(self, **kw: Any) -> str:
+        """发送消息给远程 A2A Agent 并获取回复。"""
+        import httpx
+        from a2a.client import A2AClient
+        from a2a.types import MessageData, Part, TaskInput, TaskSendParams
+
+        url = self._get_url(kw)
+        text = kw.get("message", "")
+        if not text:
+            return "❌ message 不能为空"
+
+        async def _exec():
+            async with httpx.AsyncClient() as c:
+                client = await A2AClient.get_client_from_agent_card_url(c, url)
+                req = TaskSendParams(
+                    input=TaskInput(
+                        message=MessageData(role="user", parts=[Part(type="text", text=text)])
+                    )
+                )
+                resp = await client.send_message(req)
+                parts = []
+                if hasattr(resp, "result") and resp.result:
+                    msg = getattr(resp.result, "message", None)
+                    if msg and hasattr(msg, "content"):
+                        for p in msg.content:
+                            if hasattr(p, "text") and p.text:
+                                parts.append(p.text)
+                return "\n".join(parts) if parts else str(resp)
+
+        return self._run_async(_exec())
+
+    def _get_agent_card(self, **kw: Any) -> str:
+        """获取远程 Agent 的元信息卡片。"""
+        import httpx
+        url = self._get_url(kw)
+
+        async def _exec():
+            async with httpx.AsyncClient() as c:
+                r = await c.get(f"{url.rstrip('/')}/.well-known/agent.json")
+                card = r.json()
+                lines = ["📇 Agent Card:\n"]
+                for k in ("name", "description", "version", "url"):
+                    if k in card:
+                        lines.append(f"  {k}: {card[k]}")
+                skills = card.get("skills", [])
+                if skills:
+                    lines.append(f"\n  技能 ({len(skills)}):")
+                    for s in skills:
+                        lines.append(f"    · {s.get('name', '?')}: {s.get('description', '')[:60]}")
+                return "\n".join(lines)
+
+        return self._run_async(_exec())
+
+    def _list_skills(self, **kw: Any) -> str:
+        """列出远程 Agent 的技能（通过 Agent Card）。"""
+        card_out = self._get_agent_card(**kw)
+        if "技能" not in card_out:
+            return card_out
+        return card_out[card_out.index("技能"):]
+
+
+# ══════════════════════════════════════════════════════════════════════
 # 便捷工厂函数
 # ══════════════════════════════════════════════════════════════════════
 
@@ -476,6 +662,20 @@ def create_mcp_tool(
         MCPTool 实例
     """
     return MCPTool(connection=connection)
+
+
+def create_a2a_tool(
+    default_url: Optional[str] = None,
+) -> A2ATool:
+    """创建 A2ATool 实例的便捷函数。
+
+    Args:
+        default_url: 远程 A2A Agent 的默认 URL
+
+    Returns:
+        A2ATool 实例
+    """
+    return A2ATool(default_url=default_url)
 
 
 # ══════════════════════════════════════════════════════════════════════

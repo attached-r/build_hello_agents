@@ -126,13 +126,23 @@ class MCPClient:
             )
 
         import fastmcp
-        from .transports import SSEConfig as _SSEConfig, SSETransport as _SSETransport
+        from hello_agents.protocols.mcp.transports import SSEConfig as _SSEConfig, SSETransport as _SSETransport
 
         # ── 1) 命令列表 → StdioTransport ────────────────────────
         if isinstance(server, list):
-            from fastmcp.client.transports.stdio import StdioTransport
+            # Python 脚本用 PythonStdioTransport（自动用 sys.executable）
+            if (
+                server[0] in ("python", "python3")
+                and len(server) > 1
+                and server[1].endswith(".py")
+            ):
+                from fastmcp.client.transports.stdio import PythonStdioTransport
 
-            transport = StdioTransport(command=server[0], args=server[1:])
+                transport = PythonStdioTransport(script_path=server[1])
+            else:
+                from fastmcp.client.transports.stdio import StdioTransport
+
+                transport = StdioTransport(command=server[0], args=server[1:])
             self._client = fastmcp.Client(transport)
 
         # ── 2) SSEConfig 实例 → 显式 SSE 传输 ──────────────────
